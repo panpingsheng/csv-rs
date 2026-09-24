@@ -103,9 +103,9 @@ impl DcuDevice {
 
                 if let Some(path) = hyflash_path {
                     let node_index = node.saturating_sub(invalid_dcu_count); // --node argument for hyflash
-                    // Run hyflash to query the security state. The command's
-                    // exit status is not checked; only the captured output is
-                    // inspected for "SECURE" to skip non-SECURE nodes.
+                                                                             // Run hyflash to query the security state. The command's
+                                                                             // exit status is not checked; only the captured output is
+                                                                             // inspected for "SECURE" to skip non-SECURE nodes.
                     let output = std::process::Command::new(path)
                         .arg("--node")
                         .arg(node_index.to_string())
