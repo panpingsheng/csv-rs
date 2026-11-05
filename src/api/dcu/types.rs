@@ -29,13 +29,15 @@ pub struct Body {
     pub user_data: [u8; 64],
     /// Measurement data (32 bytes)
     pub measure: [u8; 32],
-    /// Reserved data (128 bytes)
+    /// CC mode (4 bytes, carved out of the reserved area)
+    pub ccmode: u32,
+    /// Reserved data (124 bytes, was 128 before ccmode was added)
     #[serde(with = "serde_bytes")]
-    pub reserved: [u8; 128],
-    /// Indicates the purpose/usage of the signature
-    pub sig_usage: u32,
+    pub reserved: [u8; 124],
     /// Algorithm used for generating the signature
     pub sig_algo: u32,
+    /// Indicates the purpose/usage of the signature
+    pub sig_usage: u32,
 }
 
 impl Default for Body {
@@ -46,9 +48,10 @@ impl Default for Body {
             chip_id: Default::default(),
             user_data: [0u8; 64],
             measure: Default::default(),
-            reserved: [0u8; 128],
-            sig_usage: Default::default(),
+            ccmode: Default::default(),
+            reserved: [0u8; 124],
             sig_algo: Default::default(),
+            sig_usage: Default::default(),
         }
     }
 }
@@ -60,8 +63,9 @@ impl Body {
         trace!("Chip ID: {}", String::from_utf8_lossy(&self.chip_id));
         trace!("User data: {}", encode(self.user_data));
         trace!("Measure: {:?}", self.measure);
-        trace!("Signature Usage: {}", self.sig_usage);
+        trace!("CC Mode: {}", self.ccmode);
         trace!("Signature Algorithm: {}", self.sig_algo);
+        trace!("Signature Usage: {}", self.sig_usage);
     }
 }
 
@@ -168,5 +172,20 @@ impl Verifiable for (&Certificate, &AttestationReport) {
             &self.0.body.data.user_id[..self.0.body.data.uid_size as usize],
             &sig,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Body;
+    use std::mem::{offset_of, size_of};
+
+    #[test]
+    fn body_layout_matches_firmware() {
+        assert_eq!(size_of::<Body>(), 252);
+        assert_eq!(offset_of!(Body, ccmode), 116);
+        assert_eq!(offset_of!(Body, reserved), 120);
+        assert_eq!(offset_of!(Body, sig_algo), 244);
+        assert_eq!(offset_of!(Body, sig_usage), 248);
     }
 }
